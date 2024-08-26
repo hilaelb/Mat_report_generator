@@ -2,6 +2,8 @@
     "depth": "meters",
     "time": "minutes",
     "latitude": "degrees",
-    "longitude": "degrees"
+    "longitude": "degrees",
+    "rpm": "rpm",
+    "voltage": "volts"
 
 }

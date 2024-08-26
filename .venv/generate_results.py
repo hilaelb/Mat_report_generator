@@ -257,58 +257,93 @@ def create_3d_plot(output_plot_path,dict_value_items, units_config_path="units_c
     plt.savefig(output_plot_path)
     plt.close()
 
-def create_plot(mat_file_path, output_plot_path, table, x, y, units_config_path="units_config.json"):
-    data = scipy.io.loadmat(mat_file_path)
-    pprint(data)
+def plot_tiger_modes(tables, output_plot_path, units_config_path="units_config.json"):
+    # Define state labels and values
+    state_labels = {
+        1: 'IDLE',
+        2: 'JOYSTICK',
+        4: 'FIXED_MANUVER',
+        8: 'HOLD_POSITION',
+        16: 'ABORTED_ONLY_MANUAL',
+        32: 'ABORTED_LPM',
+        64: 'CALIBRATION',
+        128: 'GUIDED_MISSION'
+    }
+    units_config = load_units_config(units_config_path)
+    time_data = state_data = None
 
-    if table not in data:
-        print(f"Table '{table}' not found in {mat_file_path}. Skipping...")
-        return
+    for key, values in tables.items():
+        if key == 'timestamp':
+            # Convert time from microseconds to minutes
+            time_data = np.array(values).flatten() / 1e6 / 60
+            # Normalize the time to start from 0 minutes
+            time_data = time_data - time_data[0]
+            x_label = 'time'
+            x_unit = units_config.get(x_label, "unknown unit")
 
-    field_data = data[table]
+        elif key == 'tiger_mode':
+            state_data = np.array(values).flatten()
 
-    # Check if the field_data array is empty
-    if field_data.size == 0:
-        print(f"No data found in table '{table}'. Skipping...")
-        return
+    # Create a list of state labels based on the state data
+    state_names = [state_labels.get(state, 'UNKNOWN') for state in state_data]
 
-    try:
-        axis_x = field_data[0][0][x][0]
-        axis_y = field_data[0][0][y][0]
-    except IndexError:
-        print(f"Error accessing data for '{x}' or '{y}' in table '{table}'. Skipping...")
-        return
-    except KeyError:
-        print(f"'{x}' or '{y}' not found in table '{table}'. Skipping...")
-        return
+    # Create a unique list of states for plotting
+    unique_states = list(state_labels.values())
+    state_mapping = {state: i for i, state in enumerate(unique_states)}
+    numeric_states = [state_mapping[state] for state in state_names]
 
-    if axis_x.size == 0 or axis_y.size == 0:
-        print(f"No data available for '{x}' or '{y}' in table '{table}'. Skipping...")
-        return
+    # Create the plot
+    plt.figure(figsize=(20, 10))
+    plt.step(time_data, numeric_states, where='post', label='Tiger State')
+    plt.yticks(range(len(unique_states)), unique_states)
+    plt.xlabel(f'Time [{x_unit}]')
+    plt.ylabel('State')
+    plt.title('Tiger States Over Time')
+    plt.grid(True)
+    plt.legend()
+    plt.savefig(output_plot_path)
+    plt.close()
+
+    #tables = {'timpstamps': [...], 'tiger_modes': [...]}
+
+
+
+
+def create_plot(output_plot_path, tables, units_config_path="units_config.json"):
 
     # Load units configuration
     units_config = load_units_config(units_config_path)
+    axis_x = axis_y =  None
+    x_unit = y_unit = "unknown unit"
+    x_label = y_label= "unknown"
+
+    for key, values in tables.items():
+        if key == 'timestamp':
+            # Convert time from microseconds to minutes
+            axis_x = np.array(values).flatten() / 1e6 / 60
+            # Normalize the time to start from 0 minutes
+            axis_x = axis_x - axis_x[0]
+            x_label = 'time'
 
 
-    if x == 'timestamp':
-        # Convert time from microseconds to minutes
-        axis_x = np.array(axis_x).flatten() / 1e6 / 60
-        # Normalize the time to start from 0 minutes
-        axis_x = axis_x - axis_x[0]
-        x = 'time'
+        else:
+            axis_x = np.array(axis_x).flatten()
 
-    else:
-        axis_x = np.array(axis_x).flatten()
-    axis_y = np.array(axis_y).flatten()
+        if key == 'v_in':
+            y_label = 'voltage'
+            axis_y = np.array(values).flatten()
+        else:
+            y_label = key
+            axis_y = np.array(values).flatten()
 
-    # Get the units for x and y
-    x_unit = units_config.get(x, "unknown unit")
-    y_unit = units_config.get(y, "unknown unit")
+        x_unit = units_config.get(x_label, "unknown unit")
+        y_unit = units_config.get(y_label, "unknown unit")
+
 
     plt.figure(figsize=(10, 6))
-    plt.plot(axis_x, axis_y, label=f'{y} over {x}')
-    plt.xlabel(f'{x} [{x_unit}]')
-    plt.ylabel(f'{y} [{y_unit}]')
+    plt.plot(axis_x, axis_y, label=f'{y_label} over {x_label}')
+    plt.xlabel(f'{x_label} [{x_unit}]')
+    plt.ylabel(f'{y_label} [{y_unit}]')
 
 
     plt.legend()
@@ -402,71 +437,34 @@ class PlotSelectionDialog(QDialog):
     def __init__(self, file_paths):
         super().__init__()
         self.setWindowTitle("Select Plots for Each File")
-        self.setGeometry(100, 100, 800, 600)  # Set larger window size
+        self.setGeometry(100, 100, 800, 600)
         layout = QVBoxLayout(self)
 
         font = QFont()
-        font.setPointSize(14)  # Larger font size for the dialog
+        font.setPointSize(14)
 
         self.scroll = QScrollArea(self)
         self.scroll.setWidgetResizable(True)
         self.scroll_widget = QWidget()
         self.scroll_layout = QVBoxLayout(self.scroll_widget)
-
-        # Align the layout to the top of the scroll area
         self.scroll_layout.setAlignment(Qt.AlignTop)
-        # Reduce spacing between each file
-        self.scroll_layout.setContentsMargins(10, 10, 10, 10)  # Set margins around the layout
-        self.scroll_layout.setSpacing(5)  # Reduce spacing between widgets
+        self.scroll_layout.setContentsMargins(10, 10, 10, 10)
+        self.scroll_layout.setSpacing(5)
 
         self.file_widgets = {}
         self.checkboxes = {}
 
         for file_path in file_paths:
-            # File name label
             file_name_label = QLabel(os.path.basename(file_path))
-            file_name_label.setFont(font)  # Larger font size for file names
+            file_name_label.setFont(font)
             file_name_label.setStyleSheet("color: blue; cursor: pointer;")
             file_name_label.mousePressEvent = lambda event, fp=file_path: self.toggle_checkboxes(fp)
             self.scroll_layout.addWidget(file_name_label)
 
-            # Create checkbox container widget
-            checkbox_container = QWidget()
-            checkbox_layout = QVBoxLayout(checkbox_container)
-
-            depth_time_checkbox = QCheckBox("Depth/Time Plot")
-            lat_long_checkbox = QCheckBox("Lat/Long Plot")
-            lat_long_time_checkbox = QCheckBox("Lat-Long/Time Plot")
-            lat_depth_time_checkbox = QCheckBox("Lat-Depth/Time Plot")
-            select_all_checkbox = QCheckBox("Select All")
-
-            # Larger font size for checkboxes
-            depth_time_checkbox.setFont(font)
-            lat_long_checkbox.setFont(font)
-            lat_long_time_checkbox.setFont(font)
-            lat_depth_time_checkbox.setFont(font)
-            select_all_checkbox.setFont(font)
-
-            select_all_checkbox.stateChanged.connect(
-                lambda state, dt=depth_time_checkbox, ll=lat_long_checkbox, llt= lat_long_time_checkbox, ldt = lat_depth_time_checkbox: self.toggle_select_all(state, dt, ll,llt,ldt)
-
-            )
-
-            checkbox_layout.addWidget(depth_time_checkbox)
-            checkbox_layout.addWidget(lat_long_checkbox)
-            checkbox_layout.addWidget(lat_long_time_checkbox)
-            checkbox_layout.addWidget(lat_depth_time_checkbox)
-            checkbox_layout.addWidget(select_all_checkbox)
-
-            # Store widgets and hide the checkbox container initially
+            checkbox_container, checkboxes = self.create_checkboxes(font)
             self.file_widgets[file_path] = checkbox_container
-            self.checkboxes[file_path] = {
-                "depth_time": depth_time_checkbox,
-                "lat_long": lat_long_checkbox,
-                "lat_long_time": lat_long_time_checkbox,
-                "lat_depth_time": lat_depth_time_checkbox,
-                "select_all": select_all_checkbox
-            }
+            self.checkboxes[file_path] = checkboxes
+
             checkbox_container.setVisible(False)
             self.scroll_layout.addWidget(checkbox_container)
 
@@ -474,58 +472,72 @@ class PlotSelectionDialog(QDialog):
         layout.addWidget(self.scroll)
 
         button_layout = QHBoxLayout()
-
-        # "Choose Same for All" button
         choose_same_button = QPushButton("Choose Same for All")
         choose_same_button.setFont(font)
         choose_same_button.clicked.connect(self.choose_same_for_all)
         button_layout.addWidget(choose_same_button)
 
         ok_button = QPushButton("OK")
-        ok_button.setFont(font)  # Larger font size for the button
+        ok_button.setFont(font)
         ok_button.clicked.connect(self.accept)
         button_layout.addWidget(ok_button)
 
         layout.addLayout(button_layout)
         self.setLayout(layout)
 
+    def create_checkboxes(self, font):
+        checkbox_container = QWidget()
+        checkbox_layout = QVBoxLayout(checkbox_container)
+
+        plot_options = [
+            "Depth/Time Plot",
+            "Lat/Long Plot",
+            "Lat-Long/Time Plot",
+            "Lat-Depth/Time Plot",
+            "Jet Rpm/Time Plot",
+            "Jet Voltage/Time Plot",
+            "Tiger Mode/Time Plot"
+            # Add more plot options here
+        ]
+
+        checkboxes = {}
+        for option in plot_options:
+            checkbox = QCheckBox(option)
+            checkbox.setFont(font)
+            checkbox_layout.addWidget(checkbox)
+            checkboxes[option] = checkbox
+
+        select_all_checkbox = QCheckBox("Select All")
+        select_all_checkbox.setFont(font)
+        select_all_checkbox.stateChanged.connect(
+            lambda state, checkboxes=checkboxes: self.toggle_select_all(state, checkboxes)
+        )
+        checkbox_layout.addWidget(select_all_checkbox)
+
+        return checkbox_container, checkboxes
+
     def toggle_checkboxes(self, file_path):
-        # Toggle visibility of the checkbox container for the selected file
         for fp, widget in self.file_widgets.items():
             widget.setVisible(fp == file_path)
 
-    def toggle_select_all(self, state, depth_time_checkbox, lat_long_checkbox, lat_long_time_checkbox, lat_depth_time_checkbox):
-        depth_time_checkbox.setChecked(state == Qt.Checked)
-        lat_long_checkbox.setChecked(state == Qt.Checked)
-        lat_long_time_checkbox.setChecked(state == Qt.Checked)
-        lat_depth_time_checkbox.setChecked(state == Qt.Checked)
+    def toggle_select_all(self, state, checkboxes):
+        for checkbox in checkboxes.values():
+            checkbox.setChecked(state == Qt.Checked)
 
     def choose_same_for_all(self):
-        # Get the settings of the first file (assuming you want to apply its settings to all)
         first_file_checkboxes = list(self.checkboxes.values())[0]
-        depth_time_checked = first_file_checkboxes["depth_time"].isChecked()
-        lat_long_checked = first_file_checkboxes["lat_long"].isChecked()
-        lat_long_time_checked = first_file_checkboxes["lat_long_time"].isChecked()
-        lat_depth_time_checked = first_file_checkboxes["lat_depth_time"].isChecked()
+        first_file_states = {k: cb.isChecked() for k, cb in first_file_checkboxes.items()}
 
-        # Apply these settings to all files
         for checkboxes in self.checkboxes.values():
-            checkboxes["depth_time"].setChecked(depth_time_checked)
-            checkboxes["lat_long"].setChecked(lat_long_checked)
-            checkboxes["lat_long_time"].setChecked(lat_long_time_checked)
-            checkboxes["lat_depth_time"].setChecked(lat_depth_time_checked)
+            for key, checkbox in checkboxes.items():
+                checkbox.setChecked(first_file_states[key])
 
     def get_selected_plots(self):
         selected_plots = {}
         for file_path, checkboxes in self.checkboxes.items():
-            selected_plots[file_path] = {
-                "depth_time": checkboxes["depth_time"].isChecked(),
-                "lat_long": checkboxes["lat_long"].isChecked(),
-                "lat_long_time": checkboxes["lat_long_time"].isChecked(),
-                "lat_depth_time": checkboxes["lat_depth_time"].isChecked()
-
-            }
+            selected_plots[file_path] = {k: cb.isChecked() for k, cb in checkboxes.items()}
         return selected_plots
+
 
 
 
@@ -562,16 +574,20 @@ def process_files():
     for mat_file_path in file_paths:
         base_name = os.path.basename(mat_file_path).replace('.mat', '')
 
-        if selected_plots[mat_file_path]["depth_time"]:
+        if selected_plots[mat_file_path]["Depth/Time Plot"]:
             plot_file_name_1 = f'{base_name}_ba30_depth_vs_time.png'
             plot_file_path_1 = os.path.join(plots_folder, plot_file_name_1)
-            create_plot(mat_file_path, plot_file_path_1, 'ba30', 'timestamp', 'depth')
+            dict = {'ba30': ['timestamp', 'depth']}
+            dict_value_items = extract_values_from_data(mat_file_path, dict)
+            create_plot(plot_file_path_1, dict_value_items)
             plot_paths.append((plot_file_path_1, 'This plot shows the depth as a function of time.'))
 
-        if selected_plots[mat_file_path]["lat_long"]:
+        if selected_plots[mat_file_path]["Lat/Long Plot"]:
             plot_file_name_2 = f'{base_name}_waypoint_rosbag_lat_vs_long.png'
             plot_file_path_2 = os.path.join(plots_folder, plot_file_name_2)
-            create_plot(mat_file_path, plot_file_path_2, 'waypoint_rosbag', 'latitude', 'longitude')
+            dict = {'waypoint_rosbag': ['latitude', 'longitude']}
+            dict_value_items = extract_values_from_data(mat_file_path, dict)
+            create_plot(plot_file_path_2, dict_value_items)
             plot_paths.append((plot_file_path_2, 'This plot shows the latitude as a function of longitude.'))
 
             kml_path = os.path.join(kmls_folder, f'{base_name}_waypoint_rosbag_lat_vs_long.kml')
@@ -581,7 +597,8 @@ def process_files():
             kml_to_gmplot_image(mat_file_path, 'waypoint_rosbag', 'latitude', 'longitude', map_file_path)
             map_paths.append(map_file_path)
 
-        if selected_plots[mat_file_path]["lat_long_time"]:
+
+        if selected_plots[mat_file_path]["Lat-Long/Time Plot"]:
             plot_file_name_3 = f'{base_name}_waypoint_rosbag_lat_long_vs_time.png'
             plot_file_path_3 = os.path.join(plots_folder, plot_file_name_3)
             dict = {'waypoint_rosbag': ['latitude', 'longitude'],
@@ -590,7 +607,7 @@ def process_files():
             create_3d_plot(plot_file_path_3, dict_value_items)
             plot_paths.append((plot_file_path_3,''))
 
-        if selected_plots[mat_file_path]["lat_depth_time"]:
+        if selected_plots[mat_file_path]["Lat-Depth/Time Plot"]:
             plot_file_name_4 = f'{base_name}_waypoint_rosbag_lat_depth_vs_time.png'
             plot_file_path_4 = os.path.join(plots_folder, plot_file_name_4)
             dict = {'waypoint_rosbag': ['latitude', 'altitude'],
@@ -598,6 +615,31 @@ def process_files():
             dict_value_items = extract_values_from_data(mat_file_path, dict)
             create_3d_plot(plot_file_path_4, dict_value_items)
             plot_paths.append((plot_file_path_4,''))
+
+
+        if selected_plots[mat_file_path]["Jet Rpm/Time Plot"]:
+            plot_file_name_5 = f'{base_name}_jet_rpm_vs_time.png'
+            plot_file_path_5 = os.path.join(plots_folder, plot_file_name_5)
+            dict = {'jet': ['timestamp', 'rpm']}
+            dict_value_items = extract_values_from_data(mat_file_path, dict)
+            create_plot(plot_file_path_5,dict_value_items )
+            plot_paths.append((plot_file_path_5, 'This plot shows the jet rpm as a function of time.'))
+
+        if selected_plots[mat_file_path]["Jet Voltage/Time Plot"]:
+            plot_file_name_6 = f'{base_name}_jet_voltage_vs_time.png'
+            plot_file_path_6 = os.path.join(plots_folder, plot_file_name_6)
+            dict = {'jet': ['timestamp', 'v_in']}
+            dict_value_items = extract_values_from_data(mat_file_path, dict)
+            create_plot(plot_file_path_6,dict_value_items)
+            plot_paths.append((plot_file_path_6, 'This plot shows the jet voltage as a function of time.'))
+
+        if selected_plots[mat_file_path]["Tiger Mode/Time Plot"]:
+            plot_file_name_7 = f'{base_name}_tiger_mode_vs_time.png'
+            plot_file_path_7 = os.path.join(plots_folder, plot_file_name_7)
+            dict = {'tiger': ['timestamp', 'tiger_mode']}
+            dict_value_items = extract_values_from_data(mat_file_path, dict)
+            plot_tiger_modes(dict_value_items, plot_file_path_7)
+            plot_paths.append((plot_file_path_7, 'This plot shows the tiger mode as a function of time.'))
 
 
     doc_file_path = os.path.join(output_folder, 'report.docx')
