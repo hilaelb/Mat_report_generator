@@ -4,6 +4,18 @@
     "latitude": "degrees",
     "longitude": "degrees",
     "rpm": "rpm",
-    "voltage": "volts"
+    "voltage": "volts",
+    "srv1_angle": "degrees",
+    "srv2_angle": "degrees",
+    "srv3_angle": "degrees",
+    "srv4_angle": "degrees",
+    "srv1_voltage": "volts",
+    "srv2_voltage": "volts",
+    "srv3_voltage": "volts",
+    "srv4_voltage": "volts",
+    "srv1_temperature": "celsius",
+    "srv2_temperature": "celsius",
+    "srv3_temperature": "celsius",
+    "srv4_temperature": "celsius"
 
 }
