@@ -16,6 +16,13 @@
     "srv1_temperature": "celsius",
     "srv2_temperature": "celsius",
     "srv3_temperature": "celsius",
-    "srv4_temperature": "celsius"
+    "srv4_temperature": "celsius",
+    "yaw": "degrees",
+    "pitch": "degrees",
+    "roll": "degrees",
+    "poslla_x": "meters",
+    "poslla_y": "meters",
+    "poslla_z": "meters"
+
 
 }
