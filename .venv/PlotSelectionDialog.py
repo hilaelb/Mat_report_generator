@@ -85,7 +85,15 @@ class PlotSelectionDialog(QDialog):
             "Servo Voltage/Time Plot",
             "Servo Temperature/Time Plot",
             "ADC measurements",
-            "Depth/Time Plot"
+            "Depth/Time Plot",
+            "Vn Histogram",
+            "Servo Histogram",
+            "Bar30 Histogram",
+            "BME Histogram",
+            "ADC Histogram",
+            "Pid pitch Histogram",
+            "Pid heading Histogram",
+            "Jet Histogram"
 
             # Add more plot options here
         ]

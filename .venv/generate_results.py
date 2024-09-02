@@ -16,7 +16,7 @@ from PIL import Image
 import numpy as np
 from PyQt5.QtWidgets import QApplication, QDialog, QFileDialog, QVBoxLayout, QCheckBox, QPushButton, QLabel, QScrollArea, QWidget, QHBoxLayout,QListWidget
 from PlotSelectionDialog import PlotSelectionDialog
-from plots import create_plot, create_kml_from_waypoints, kml_to_gmplot_image, create_acceleration_histogram, create_partitioned_plot, create_mixed_plot, plot_tiger_modes
+from plots import create_plot, create_kml_from_waypoints, kml_to_gmplot_image, create_histogram, create_partitioned_plot, create_mixed_plot, plot_tiger_modes
 
 
 
@@ -291,8 +291,8 @@ def process_files():
             plot_file_path_19 = os.path.join(plots_folder, plot_file_name_19)
             dict = {'gyro_accel_data': ['accel_x', 'accel_y', 'accel_z']}
             dict_value_items = extract_values_from_data(mat_file_path, dict)
-            create_acceleration_histogram(dict_value_items, plot_file_path_19)
-            plot_paths.append((plot_file_path_19, 'Histogram of Acceleration'))
+            create_histogram(dict_value_items, plot_file_path_19)
+            plot_paths.append((plot_file_path_19, ''))
 
         if selected_plots[mat_file_path]["Tiger Mode/Time Plot"]:
             plot_file_name_7 = f'{base_name}_tiger_mode_vs_time.png'
@@ -329,6 +329,70 @@ def process_files():
             plot_paths.append((f'{plot_file_path_13[:-4]}_2.png', ''))
             plot_paths.append((f'{plot_file_path_13[:-4]}_3.png', ''))
             plot_paths.append((f'{plot_file_path_13[:-4]}_4.png', ''))
+
+        if selected_plots[mat_file_path]["Vn Histogram"]:
+            plot_file_name = f'{base_name}_vn_histogram.png'
+            plot_file_path = os.path.join(plots_folder, plot_file_name)
+            dict = {'vn': ['timestamp']}
+            dict_value_items = extract_values_from_data(mat_file_path, dict)
+            create_histogram(dict_value_items, plot_file_path,title='Vn')
+            plot_paths.append((plot_file_path, ''))
+
+        if selected_plots[mat_file_path]["Servo Histogram"]:
+            plot_file_name_21 = f'{base_name}_servo_histogram.png'
+            plot_file_path_21 = os.path.join(plots_folder, plot_file_name_21)
+            dict = {'servo': ['timestamp']}
+            dict_value_items = extract_values_from_data(mat_file_path, dict)
+            create_histogram(dict_value_items, plot_file_path_21,title='Servo')
+            plot_paths.append((plot_file_path_21, ''))
+
+        if selected_plots[mat_file_path]["Bar30 Histogram"]:
+            plot_file_name_21 = f'{base_name}_bar30_histogram.png'
+            plot_file_path_21 = os.path.join(plots_folder, plot_file_name_21)
+            dict = {'ba30': ['timestamp']}
+            dict_value_items = extract_values_from_data(mat_file_path, dict)
+            create_histogram(dict_value_items, plot_file_path_21,title='Bar30')
+            plot_paths.append((plot_file_path_21, ''))
+
+        if selected_plots[mat_file_path]["BME Histogram"]:
+            plot_file_name_21 = f'{base_name}_bme_histogram.png'
+            plot_file_path_21 = os.path.join(plots_folder, plot_file_name_21)
+            dict = {'bme_back': ['timestamp']}
+            dict_value_items = extract_values_from_data(mat_file_path, dict)
+            create_histogram(dict_value_items, plot_file_path_21,title='BME')
+            plot_paths.append((plot_file_path_21, ''))
+
+        if selected_plots[mat_file_path]["ADC Histogram"]:
+            plot_file_name_21 = f'{base_name}_adc_histogram.png'
+            plot_file_path_21 = os.path.join(plots_folder, plot_file_name_21)
+            dict = {'adc': ['timestamp']}
+            dict_value_items = extract_values_from_data(mat_file_path, dict)
+            create_histogram(dict_value_items, plot_file_path_21,title='ADC')
+            plot_paths.append((plot_file_path_21, ''))
+
+        if selected_plots[mat_file_path]["Pid pitch Histogram"]:
+            plot_file_name_21 = f'{base_name}_pid_pitch_histogram.png'
+            plot_file_path_21 = os.path.join(plots_folder, plot_file_name_21)
+            dict = {'pid': ['timestamp']}
+            dict_value_items = extract_values_from_data(mat_file_path, dict)
+            create_histogram(dict_value_items, plot_file_path_21,title='Pid pitch')
+            plot_paths.append((plot_file_path_21, ''))
+
+        if selected_plots[mat_file_path]["Pid heading Histogram"]:
+            plot_file_name_21 = f'{base_name}_pid_heading_histogram.png'
+            plot_file_path_21 = os.path.join(plots_folder, plot_file_name_21)
+            dict = {'pid': ['timestamp']}
+            dict_value_items = extract_values_from_data(mat_file_path, dict)
+            create_histogram(dict_value_items, plot_file_path_21,title='Pid heading')
+            plot_paths.append((plot_file_path_21, ''))
+
+        if selected_plots[mat_file_path]["Jet Histogram"]:
+            plot_file_name_21 = f'{base_name}_jet_histogram.png'
+            plot_file_path_21 = os.path.join(plots_folder, plot_file_name_21)
+            dict = {'jet': ['timestamp']}
+            dict_value_items = extract_values_from_data(mat_file_path, dict)
+            create_histogram(dict_value_items, plot_file_path_21,title='Jet')
+            plot_paths.append((plot_file_path_21, ''))
 
 
 

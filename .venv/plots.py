@@ -209,7 +209,17 @@ def determine_figure_size(x_length, y_length, base_size=(12, 3), scale_factor=0.
 
     return width, height
 
-def create_acceleration_histogram(table, output_plot_path):
+def turn_time_to_nomeric_dev(timestamp):
+    # Convert microseconds to seconds
+    time_in_seconds = np.array(timestamp) / 1e6
+
+    # Calculate the difference between consecutive timestamps
+    time_diffs = np.diff(time_in_seconds)
+
+    return time_diffs
+
+
+def create_histogram(table, output_plot_path,title=''):
     if table is None:
         print("Error: Missing table data.")
         return
@@ -221,8 +231,15 @@ def create_acceleration_histogram(table, output_plot_path):
     if num_columns == 1:
         axes = [axes]  # Ensure axes is a list even if there's only one subplot
 
+    x_label = None
+
     for i, (key, data) in enumerate(table.items()):
-        data = np.array(data)
+        if key == 'timestamp':
+            data = turn_time_to_nomeric_dev(data)
+            x_label = 'Time [sec]'
+        else:
+            data = np.array(data)
+            x_label = key
 
         # Calculate statistics
         mean_val = np.mean(data)
@@ -239,9 +256,9 @@ def create_acceleration_histogram(table, output_plot_path):
                         label=f'Std Dev: {std_dev:.2f}')
         axes[i].axvline(mean_val + std_dev, color='orange', linestyle='dashed', linewidth=2)
 
-        axes[i].set_xlabel(f'{key}')
-        axes[i].set_ylabel('Frequency')
-        axes[i].set_title(f'Histogram of {key} with Stats')
+        axes[i].set_xlabel(f'{x_label}')
+        axes[i].set_ylabel('# of Occurrences')
+        axes[i].set_title(f'Histogram of {title} {x_label} with Stats')
         axes[i].legend()
 
     # Adjust layout and save the figure
@@ -251,6 +268,9 @@ def create_acceleration_histogram(table, output_plot_path):
 
 
 def create_mixed_plot(output_plot_path, tables, title='',y_names ='',units_config_path="units_config.json" ):
+    if tables is None:
+        print("Error: Missing table data.")
+        return
     units_config = load_units_config(units_config_path)
 
     x_data = None
@@ -292,6 +312,7 @@ def create_mixed_plot(output_plot_path, tables, title='',y_names ='',units_confi
     plt.close()
 
 def create_partitioned_plot(output_plot_path, tables,title='', units_config_path="units_config.json"):
+
     units_config = load_units_config(units_config_path)
     if tables is None:
         print("Error: Missing tables data.")
@@ -355,8 +376,9 @@ def create_partitioned_plot(output_plot_path, tables,title='', units_config_path
 
 
 def create_3d_plot(output_plot_path,dict_value_items, units_config_path="units_config.json"):
-
-
+    if dict_value_items is None:
+        print("Error: Missing table data.")
+        return
     # Load units configuration
     units_config = load_units_config(units_config_path)
     axis_x = axis_y1 = axis_y2 = None
@@ -493,6 +515,8 @@ def plot_tiger_modes(tables, output_plot_path, units_config_path="units_config.j
 
 def create_plot(output_plot_path, tables,title='', units_config_path="units_config.json",plot=False,mean_sd = False,range= (0,0)):
 
+    if tables is None:
+        return
     # Load units configuration
     units_config = load_units_config(units_config_path)
     keys = list(tables.keys())
