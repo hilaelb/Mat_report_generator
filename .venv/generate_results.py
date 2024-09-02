@@ -77,12 +77,8 @@ def create_word_document(plot_paths, doc_file_path,map_file_paths):
             experiment_counter += 1
 
         try:
-
-
-
             doc.add_picture(plot_path, width=Inches(6))
             if description != '':
-                # doc.add_page_break()
                 doc.add_paragraph(description).alignment = 1  # Centered text
 
             # Check if there's a corresponding map file for this plot
@@ -91,6 +87,7 @@ def create_word_document(plot_paths, doc_file_path,map_file_paths):
 
             if map_file_path:
                 doc.add_picture(map_file_path, width=Inches(6))
+
 
         except Exception as e:
             print(f"Error adding plot {plot_path} to the document: {e}")
@@ -150,6 +147,8 @@ def process_files():
             dict_value_items = extract_values_from_data(mat_file_path, dict)
             create_plot(plot_file_path_1, dict_value_items)
             plot_paths.append((plot_file_path_1, ''))
+
+
 
         if selected_plots[mat_file_path]["Lat/Long Plot"]:
             plot_file_name_2 = f'{base_name}_waypoint_rosbag_lat_vs_long.png'

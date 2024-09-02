@@ -193,7 +193,7 @@ def kml_to_gmplot_image(mat_file_path, table, lat_key, lon_key, output_image_pat
     driver.quit()
 
 
-def determine_figure_size(x_length, y_length, base_size=(12, 3), scale_factor=0.1):
+def determine_figure_size(x_length, y_length, base_size=(12, 4), scale_factor=0.1):
     """
     Determines the size of the figure based on the length of the X and Y axes data.
 
@@ -204,8 +204,8 @@ def determine_figure_size(x_length, y_length, base_size=(12, 3), scale_factor=0.
     :return: Tuple (width, height) for the figure size.
     """
     # Calculate scaling
-    width = base_size[0] + scale_factor * (x_length ** 0.5)
-    height = base_size[1] + scale_factor * (y_length ** 0.5)
+    width = base_size[0] + scale_factor * (x_length ** 0.45)
+    height = base_size[1] + scale_factor * (y_length ** 0.45)
 
     return width, height
 
@@ -549,11 +549,6 @@ def create_plot(output_plot_path, tables,title='', units_config_path="units_conf
     x_unit = units_config.get(x_label, "")
     y_unit = units_config.get(y_label, "")
 
-    # Determine figure size based on the number of data points
-    # num_data_points = len(axis_x)
-    # width = max(10, min(20, num_data_points / 50))  # Adjust width dynamically
-    # height = 4  # Fixed height for consistency
-
     fig_width, fig_height = determine_figure_size(len(axis_x), len(axis_y))
     plt.figure(figsize=(fig_width, fig_height))
     if plot:
@@ -571,9 +566,12 @@ def create_plot(output_plot_path, tables,title='', units_config_path="units_conf
     if range!= (0,0):
         plt.ylim(range)
 
-    plt.title(title)
-    plt.xlabel(f'{x_label} [{x_unit}]')
-    plt.ylabel(f'{y_label} [{y_unit}]')
+    # Increase the font size of the title, labels, and ticks
+    plt.title(title, fontsize=20)  # Larger title
+    plt.xlabel(f'{x_label} [{x_unit}]', fontsize=16)  # Larger x-axis label
+    plt.ylabel(f'{y_label} [{y_unit}]', fontsize=16)  # Larger y-axis label
+    plt.xticks(fontsize=14)  # Larger x-axis tick labels
+    plt.yticks(fontsize=14)  # Larger y-axis tick labels
 
 
 
@@ -582,7 +580,7 @@ def create_plot(output_plot_path, tables,title='', units_config_path="units_conf
     plt.gca().yaxis.set_major_formatter(plt.FuncFormatter(format_decimal))
 
 
-    plt.legend()
+    #plt.legend()
     plt.savefig(output_plot_path)
     plt.close()
 
