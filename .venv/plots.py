@@ -25,7 +25,12 @@ from simplekml import Kml, LookAt
 from selenium import webdriver
 
 def format_decimal(value, pos):
-    return f'{value:.4f}'
+    # Format the value with up to 4 decimal places
+    formatted_value = f'{value:.4f}'
+    # Remove trailing zeros and the decimal point if it's an integer
+    formatted_value = formatted_value.rstrip('0').rstrip('.')
+    # Return the formatted value
+    return formatted_value
 
 
 
@@ -193,7 +198,7 @@ def kml_to_gmplot_image(mat_file_path, table, lat_key, lon_key, output_image_pat
     driver.quit()
 
 
-def determine_figure_size(x_length, y_length, base_size=(12, 4), scale_factor=0.1):
+def determine_figure_size(x_length, y_length, base_size=(15, 4), scale_factor=0.1):
     """
     Determines the size of the figure based on the length of the X and Y axes data.
 
@@ -204,8 +209,8 @@ def determine_figure_size(x_length, y_length, base_size=(12, 4), scale_factor=0.
     :return: Tuple (width, height) for the figure size.
     """
     # Calculate scaling
-    width = base_size[0] + scale_factor * (x_length ** 0.45)
-    height = base_size[1] + scale_factor * (y_length ** 0.45)
+    width = base_size[0] + scale_factor * (x_length ** 0.5)
+    height = base_size[1] + scale_factor * (y_length ** 0.5)
 
     return width, height
 
@@ -226,7 +231,8 @@ def create_histogram(table, output_plot_path,title=''):
     num_columns = len(table)
 
     # Create a figure with subplots for each column
-    fig, axes = plt.subplots(num_columns, 1, figsize=(11, 5 * num_columns))
+
+    fig, axes = plt.subplots(num_columns, 1, figsize=(11,5*num_columns))
 
     if num_columns == 1:
         axes = [axes]  # Ensure axes is a list even if there's only one subplot
@@ -245,9 +251,20 @@ def create_histogram(table, output_plot_path,title=''):
         mean_val = np.mean(data)
         max_val = np.max(data)
         std_dev = np.std(data)
+        # Create the histogram
+        counts, bins, patches = axes[i].hist(data, bins=30, alpha=0.75, color='blue', edgecolor='black')
+
+        # Increase the y-axis limit to provide space for the text above bars
+        axes[i].set_ylim(0, max(counts) * 1.2)
+
+        # Add the number of occurrences above each column
+        for count, patch in zip(counts, patches):
+            height = patch.get_height()
+            axes[i].text(patch.get_x() + patch.get_width() / 2, height + max(counts) * 0.02,  # Offset by 2% of max count
+                         f'{int(count)}', ha='center', fontsize=12)
 
         # Create the histogram
-        axes[i].hist(data, bins=30, alpha=0.75, color='blue', edgecolor='black')
+        # axes[i].hist(data, bins=30, alpha=0.75, color='blue', edgecolor='black')
 
         # Add statistical data to the plot
         axes[i].axvline(mean_val, color='red', linestyle='dashed', linewidth=2, label=f'Mean: {mean_val:.2f}')
@@ -258,11 +275,11 @@ def create_histogram(table, output_plot_path,title=''):
 
         axes[i].set_xlabel(f'{x_label}')
         axes[i].set_ylabel('# of Occurrences')
-        axes[i].set_title(f'Histogram of {title} {x_label} with Stats')
+        axes[i].set_title(f'Histogram of {title} {x_label}')
         axes[i].legend()
 
     # Adjust layout and save the figure
-    plt.tight_layout()
+    plt.tight_layout(rect=[0.05, 0.05, 1, 0.95])
     plt.savefig(output_plot_path)
     plt.close()
 
@@ -294,20 +311,21 @@ def create_mixed_plot(output_plot_path, tables, title='',y_names ='',units_confi
         return
 
     # Create the plot
-    fig_width, fig_height = determine_figure_size(len(x_data), len(y_data_list[0]))
+    fig_width, fig_height = determine_figure_size(len(x_data), len(y_data_list[0]),(14,6))
     plt.figure(figsize=(fig_width, fig_height))
 
     for i, y_data in enumerate(y_data_list):
         plt.scatter(x_data, y_data, label=f'{y_labels[i]} [{units_config.get(y_labels[i], "")}]')
 
-    plt.xlabel(f'{x_label} [{x_unit}]')
-    plt.ylabel(y_names)
-    plt.title(title)
-    plt.legend()
+    plt.xlabel(f'{x_label} [{x_unit}]', fontsize=20)
+    plt.ylabel(y_names, fontsize=20)
+    plt.tick_params(axis='both', labelsize=20)  # Larger tick labels
+    plt.title(title, fontsize=22)
     plt.grid(True)
 
     # Save the plot
-    plt.tight_layout()
+    plt.legend(fontsize=15)
+    plt.tight_layout(rect=[0.05, 0.05, 1, 0.95])
     plt.savefig(output_plot_path)
     plt.close()
 
@@ -358,18 +376,19 @@ def create_partitioned_plot(output_plot_path, tables,title='', units_config_path
         y_label = key
         y_unit = units_config.get(y_label, "")
 
-        axes[i].scatter(axis_x, axis_y, label=f'{y_label} [{y_unit}]')
-        axes[i].set_ylabel(f'{y_label} [{y_unit}]')
+        axes[i].scatter(axis_x, axis_y)
+        axes[i].set_ylabel(f'{y_label} [{y_unit}]', fontsize=14)
+
         axes[i].grid(True)
-        axes[i].legend(loc='upper right')
+        axes[i].legend(loc='upper right', fontsize=12)
 
 
 
 
     # Set the x-axis label on the last subplot
-    axes[-1].set_xlabel(f'{x_label} [{x_unit}]')
+    axes[-1].set_xlabel(f'{x_label} [{x_unit}]', fontsize=14)
 
-    fig.tight_layout(rect=[0, 0.03, 1, 0.95])
+    fig.tight_layout(rect=[0.05, 0.05, 1, 0.95])
     plt.savefig(output_plot_path)
     plt.close()
 
@@ -500,7 +519,7 @@ def plot_tiger_modes(tables, output_plot_path, units_config_path="units_config.j
     fig_width, fig_height = determine_figure_size(len(time_data), len(state_data))
 
     plt.figure(figsize=(fig_width, fig_height))
-    plt.step(time_data, numeric_states, where='post', label=y_label)
+    plt.step(time_data, numeric_states, where='post', label=y_label,lw=3)
     plt.yticks(range(len(unique_states)), unique_states)
     plt.xlabel(f'Time [{x_unit}]')
     plt.ylabel('State')
@@ -549,12 +568,17 @@ def create_plot(output_plot_path, tables,title='', units_config_path="units_conf
     x_unit = units_config.get(x_label, "")
     y_unit = units_config.get(y_label, "")
 
+
     fig_width, fig_height = determine_figure_size(len(axis_x), len(axis_y))
-    plt.figure(figsize=(fig_width, fig_height))
+    fig, axes = plt.subplots(figsize=(fig_width, fig_height), sharex=True)
+    fig.suptitle(title, fontsize=22)
+
     if plot:
-        plt.plot(axis_x, axis_y, label=f'{y_label} over {x_label}')
+        plt.plot(axis_x, axis_y)
+
     else:
-        plt.scatter(axis_x, axis_y, label=f'{y_label} over {x_label}')
+        plt.scatter(axis_x, axis_y)
+
 
     # Calculate mean and standard deviation if mean_sd is True
     if mean_sd:
@@ -566,21 +590,16 @@ def create_plot(output_plot_path, tables,title='', units_config_path="units_conf
     if range!= (0,0):
         plt.ylim(range)
 
-    # Increase the font size of the title, labels, and ticks
-    plt.title(title, fontsize=20)  # Larger title
-    plt.xlabel(f'{x_label} [{x_unit}]', fontsize=16)  # Larger x-axis label
-    plt.ylabel(f'{y_label} [{y_unit}]', fontsize=16)  # Larger y-axis label
-    plt.xticks(fontsize=14)  # Larger x-axis tick labels
-    plt.yticks(fontsize=14)  # Larger y-axis tick labels
-
-
+    axes.tick_params(axis='both', labelsize=20)  # Larger tick labels
+    axes.set_xlabel(f'{x_label} [{x_unit}]', fontsize=20)  # Larger x-axis label
+    axes.set_ylabel(f'{y_label} [{y_unit}]', fontsize=20)  # Larger y-axis label
 
     # Set the format for the x and y ticks to show 4 decimal places
     plt.gca().xaxis.set_major_formatter(plt.FuncFormatter(format_decimal))
     plt.gca().yaxis.set_major_formatter(plt.FuncFormatter(format_decimal))
 
-
-    #plt.legend()
+    plt.legend(fontsize=14)
+    fig.tight_layout(rect=[0.05, 0.05, 1, 0.95])
     plt.savefig(output_plot_path)
     plt.close()
 

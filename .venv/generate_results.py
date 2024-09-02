@@ -145,7 +145,7 @@ def process_files():
             plot_file_path_1 = os.path.join(plots_folder, plot_file_name_1)
             dict = {'ba30': ['depth', 'timestamp']}
             dict_value_items = extract_values_from_data(mat_file_path, dict)
-            create_plot(plot_file_path_1, dict_value_items)
+            create_plot(plot_file_path_1, dict_value_items,title='Depth over time')
             plot_paths.append((plot_file_path_1, ''))
 
 
@@ -257,7 +257,8 @@ def process_files():
             plot_file_path_16 = os.path.join(plots_folder, plot_file_name_16)
             dict = {'ba30': ['timestamp', 'temperature', 'pressure', 'depth']}
             dict_value_items = extract_values_from_data(mat_file_path, dict)
-            create_partitioned_plot(plot_file_path_16,dict_value_items,'Bar30 measurements')
+            create_mixed_plot(plot_file_path_16,dict_value_items,'Bar30 measurements','Temperature & Pressure & Depth')
+            # create_partitioned_plot(plot_file_path_16,dict_value_items,'Bar30 measurements')
             plot_paths.append((plot_file_path_16, ''))
 
         if selected_plots[mat_file_path]["Motor Guidance data"]:
