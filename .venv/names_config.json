@@ -5,10 +5,10 @@
   "longitude": "Longitude",
   "rpm": "Rpm",
   "voltage": "Voltage",
-  "srv1_angle": "Servo 1- angle",
-  "srv2_angle": "Servo 2- angle",
-  "srv3_angle": "Servo 3- angle",
-  "srv4_angle": "Servo 4- angle",
+  "srv1_angle": "Servo 1 - angle",
+  "srv2_angle": "Servo 2 - angle",
+  "srv3_angle": "Servo 3 - angle",
+  "srv4_angle": "Servo 4 - angle",
   "srv1_voltage": "Servo 1 - voltage",
   "srv2_voltage": "Servo 2 - voltage",
   "srv3_voltage": "Servo 3 - voltage",
@@ -30,9 +30,9 @@
   "ins_mode": "Inertial mode",
   "ins_error": "Inertial error",
   "ins_fix": "Inertial fix",
-  "accel_x": "Accelerate x",
-  "accel_y": "Accelerate y",
-  "accel_z": "Accelerate z",
+  "accel_x": "Accel x",
+  "accel_y": "Accel y",
+  "accel_z": "Accel z",
   "temperature": "Temperature",
   "pressure": "Pressure",
   "humidity": "Humidity",
@@ -61,6 +61,7 @@
   "srv_1_angle": "Servo 1 - angle",
   "srv_2_angle": "Servo 2 - angle",
   "srv_3_angle": "Servo 3 - angle",
-  "srv_4_angle": "Servo 4 - angle"
+  "srv_4_angle": "Servo 4 - angle",
+  "fix": "Fix"
 
 }

@@ -16,8 +16,8 @@ from PIL import Image
 import numpy as np
 from PyQt5.QtWidgets import QApplication, QDialog, QFileDialog, QVBoxLayout, QCheckBox, QPushButton, QLabel, QScrollArea, QWidget, QHBoxLayout,QListWidget
 from PlotSelectionDialog import PlotSelectionDialog
-from plots import create_plot, create_kml_from_waypoints, kml_to_gmplot_image, create_histogram, create_partitioned_plot, create_mixed_plot, plot_tiger_modes
-
+from plots import create_plot, create_kml_from_waypoints, kml_to_gmplot_image, create_histogram, \
+    create_partitioned_plot, create_mixed_plot, plot_tiger_modes, create_3d_plot
 
 
 def extract_datetime_from_path(plot_path):
@@ -86,6 +86,7 @@ def create_word_document(plot_paths, doc_file_path,map_file_paths):
             map_file_path = next((path for path in map_file_paths if base_name in os.path.basename(path)), None)
 
             if map_file_path:
+                doc.add_paragraph('Working Area:')
                 doc.add_picture(map_file_path, width=Inches(6))
 
 
@@ -192,7 +193,7 @@ def process_files():
             plot_file_path_7 = os.path.join(plots_folder, plot_file_name_7)
             dict = {'jet': ['timestamp', 'avg_input_current', 'avg_motor_current','rpm','temp_fet','v_in']}
             dict_value_items = extract_values_from_data(mat_file_path, dict)
-            create_partitioned_plot(plot_file_path_7,dict_value_items,'Jet data')
+            create_partitioned_plot(plot_file_path_7,dict_value_items,'Jet data over time')
             plot_paths.append((plot_file_path_7, ''))
 
         if selected_plots[mat_file_path]["Servo Angle/Time Plot"]:
@@ -200,7 +201,7 @@ def process_files():
             plot_file_path_8 = os.path.join(plots_folder, plot_file_name_8)
             dict = {'servo': ['timestamp', 'srv1_angle', 'srv2_angle', 'srv3_angle', 'srv4_angle']}
             dict_value_items = extract_values_from_data(mat_file_path, dict)
-            create_partitioned_plot(plot_file_path_8,dict_value_items,'Servos angle')
+            create_partitioned_plot(plot_file_path_8,dict_value_items,'Servos angle over time')
             plot_paths.append((plot_file_path_8, ''))
 
         if selected_plots[mat_file_path]["Servo Voltage/Time Plot"]:
@@ -208,7 +209,7 @@ def process_files():
             plot_file_path_9 = os.path.join(plots_folder, plot_file_name_9)
             dict = {'servo': ['timestamp', 'srv1_voltage', 'srv2_voltage', 'srv3_voltage', 'srv4_voltage']}
             dict_value_items = extract_values_from_data(mat_file_path, dict)
-            create_partitioned_plot(plot_file_path_9,dict_value_items,'Servos Voltage')
+            create_partitioned_plot(plot_file_path_9,dict_value_items,'Servos Voltage over time')
             plot_paths.append((plot_file_path_9, ''))
 
         if selected_plots[mat_file_path]["Servo Temperature/Time Plot"]:
@@ -216,7 +217,7 @@ def process_files():
             plot_file_path_10 = os.path.join(plots_folder, plot_file_name_10)
             dict = {'servo': ['timestamp', 'srv1_temperature', 'srv2_temperature', 'srv3_temperature', 'srv4_temperature']}
             dict_value_items = extract_values_from_data(mat_file_path, dict)
-            create_partitioned_plot(plot_file_path_10,dict_value_items,'Servos temperature')
+            create_partitioned_plot(plot_file_path_10,dict_value_items,'Servos temperature over time')
             plot_paths.append((plot_file_path_10, ''))
 
         if selected_plots[mat_file_path]["Inertial data"]:
@@ -224,7 +225,7 @@ def process_files():
             plot_file_path_11 = os.path.join(plots_folder, plot_file_name_11)
             dict = {'insstatus': ['timestamp', 'ins_mode', 'ins_error', 'ins_fix']}
             dict_value_items = extract_values_from_data(mat_file_path, dict)
-            create_mixed_plot(plot_file_path_11,dict_value_items,'Inertial system data','Fix & Error & Mode')
+            create_mixed_plot(plot_file_path_11,dict_value_items,title='Inertial system data',y_names='Fix & Error & Mode')
             plot_paths.append((plot_file_path_11, ''))
 
         if selected_plots[mat_file_path]["Gyro/Accel data"]:
@@ -232,7 +233,7 @@ def process_files():
             plot_file_path_12 = os.path.join(plots_folder, plot_file_name_12)
             dict = {'gyro_accel_data': ['timestamp', 'gyro_x', 'gyro_y', 'gyro_z', 'accel_x', 'accel_y', 'accel_z']}
             dict_value_items = extract_values_from_data(mat_file_path, dict)
-            create_partitioned_plot(plot_file_path_12,dict_value_items,'Gyro/Accel data')
+            create_partitioned_plot(plot_file_path_12,dict_value_items,'Gyro/Accel data over time')
             plot_paths.append((plot_file_path_12, ''))
 
 
@@ -247,9 +248,12 @@ def process_files():
         if selected_plots[mat_file_path]["BME back measurements"]:
             plot_file_name_15 = f'{base_name}_bme_back_data.png'
             plot_file_path_15 = os.path.join(plots_folder, plot_file_name_15)
-            dict = {'bme_back': ['timestamp', 'temperature', 'pressure', 'humidity']}
+            dict = {'bme_back': ['timestamp','pressure']}
+            dict2 = {'bme_back': ['temperature', 'humidity']}
             dict_value_items = extract_values_from_data(mat_file_path, dict)
-            create_mixed_plot(plot_file_path_15,dict_value_items,'BME back measurements','Temperature & Pressure & Humidity')
+            dict_value_items2 = extract_values_from_data(mat_file_path, dict2)
+            create_3d_plot(plot_file_path_15,dict_value_items,dict_value_items2,'BME back measurements')
+            # create_mixed_plot(plot_file_path_15,dict_value_items,title='BME back measurements',y_names='Temperature & Pressure & Humidity')
             plot_paths.append((plot_file_path_15, ''))
 
         if selected_plots[mat_file_path]["Bar30 measurements"]:
@@ -257,7 +261,7 @@ def process_files():
             plot_file_path_16 = os.path.join(plots_folder, plot_file_name_16)
             dict = {'ba30': ['timestamp', 'temperature', 'pressure', 'depth']}
             dict_value_items = extract_values_from_data(mat_file_path, dict)
-            create_mixed_plot(plot_file_path_16,dict_value_items,'Bar30 measurements','Temperature & Pressure & Depth')
+            create_mixed_plot(plot_file_path_16,dict_value_items,title='Bar30 measurements',y_names='Temperature & Pressure & Depth')
             # create_partitioned_plot(plot_file_path_16,dict_value_items,'Bar30 measurements')
             plot_paths.append((plot_file_path_16, ''))
 
@@ -266,7 +270,7 @@ def process_files():
             plot_file_path_17 = os.path.join(plots_folder, plot_file_name_17)
             dict = {'motor_guidance_data': ['timestamp', 'srv_1_angle', 'srv_2_angle', 'srv_4_angle', 'srv_4_angle', 'jet_rpm']}
             dict_value_items = extract_values_from_data(mat_file_path, dict)
-            create_partitioned_plot(plot_file_path_17,dict_value_items,'Motor guidance data')
+            create_partitioned_plot(plot_file_path_17,dict_value_items,'Motor guidance data - angels over time')
             plot_paths.append((plot_file_path_17, ''))
 
         if selected_plots[mat_file_path]["Vn200 data"]:
@@ -278,9 +282,9 @@ def process_files():
             dict_value_items = extract_values_from_data(mat_file_path, dict)
             dict_value_items2 = extract_values_from_data(mat_file_path, dict2)
             dict_value_items3 = extract_values_from_data(mat_file_path, dict3)
-            create_plot(plot_file_path_18, dict_value_items, 'Vn200 data',range= (-200,200))
-            create_mixed_plot(f'{plot_file_path_18[:-4]}_2.png', dict_value_items2, 'Vn200 data','Velocity x & y & z')
-            create_mixed_plot(f'{plot_file_path_18[:-4]}_3.png', dict_value_items3,'Vn200 data','position x & y & z',)
+            create_plot(plot_file_path_18, dict_value_items, 'Vn200 data - yaw over time',range= (-200,200))
+            create_mixed_plot(f'{plot_file_path_18[:-4]}_2.png', dict_value_items2, title='Vn200 data - velocity over time',y_names='Velocity x & y & z')
+            create_mixed_plot(f'{plot_file_path_18[:-4]}_3.png', dict_value_items3,title ='Vn200 data - position over time',y_names ='position x & y & z',)
             plot_paths.append((plot_file_path_18, ''))
             plot_paths.append((f'{plot_file_path_18[:-4]}_2.png',''))
             plot_paths.append((f'{plot_file_path_18[:-4]}_3.png', ''))
@@ -321,10 +325,10 @@ def process_files():
             dict_value_items2 = extract_values_from_data(mat_file_path, dict2)
             dict_value_items3 = extract_values_from_data(mat_file_path, dict3)
             dict_value_items4 = extract_values_from_data(mat_file_path, dict4)
-            create_mixed_plot(plot_file_path_13, dict_value_items,'ADC measurements', 'Voltage')
-            create_mixed_plot(f'{plot_file_path_13[:-4]}_2.png', dict_value_items2,'ADC measurements', 'Current')
-            create_plot(f'{plot_file_path_13[:-4]}_3.png', dict_value_items3,'ADC measurements',mean_sd=True,range=(50,60))
-            create_plot(f'{plot_file_path_13[:-4]}_4.png', dict_value_items4,'ADC measurements',mean_sd=True,range=(0,1))
+            create_mixed_plot(plot_file_path_13, dict_value_items,title ='ADC measurements - voltages',y_names = 'Voltage')
+            create_mixed_plot(f'{plot_file_path_13[:-4]}_2.png', dict_value_items2,title ='ADC measurements - currents',y_names = 'Current')
+            create_plot(f'{plot_file_path_13[:-4]}_3.png', dict_value_items3,'ADC measurements - voltage in over time',mean_sd=True,range=(50,60))
+            create_plot(f'{plot_file_path_13[:-4]}_4.png', dict_value_items4,'ADC measurements - current in over time',mean_sd=True,range=(0,1))
             plot_paths.append((plot_file_path_13, ''))
             plot_paths.append((f'{plot_file_path_13[:-4]}_2.png', ''))
             plot_paths.append((f'{plot_file_path_13[:-4]}_3.png', ''))
@@ -393,6 +397,55 @@ def process_files():
             dict_value_items = extract_values_from_data(mat_file_path, dict)
             create_histogram(dict_value_items, plot_file_path_21,title='Jet')
             plot_paths.append((plot_file_path_21, ''))
+
+
+        if selected_plots[mat_file_path]["Position & Velocity Uncertainty/Time Plot"]:
+            plot_file_name_21 = f'{base_name}_position_velocity_uncertainty_time_plot.png'
+            plot_file_path_21 = os.path.join(plots_folder, plot_file_name_21)
+            dict = {'vn': ['timestamp','posu', 'velu']}
+            dict_value_items = extract_values_from_data(mat_file_path, dict)
+            create_mixed_plot(plot_file_path_21,dict_value_items,title ='Pos & Vel Uncertainty Over Time',y_names='Pos & Vel Uncertainty')
+            plot_paths.append((plot_file_path_21, ''))
+
+        if selected_plots[mat_file_path]["Fix & Num Sats/Time Plot"]:
+            plot_file_name_21 = f'{base_name}_fix_num_sats_time_plot.png'
+            plot_file_path_21 = os.path.join(plots_folder, plot_file_name_21)
+            dict = {'gnssVn200': ['timestamp','fix', 'numsats']}
+            dict_value_items = extract_values_from_data(mat_file_path, dict)
+            create_mixed_plot(plot_file_path_21,dict_value_items,title ='Fix & # of Sats Over Time',y_names='Fix & # of Sats')
+            plot_paths.append((plot_file_path_21, ''))
+
+        if selected_plots[mat_file_path]["Yaw & Status/Time Plot"]:
+            plot_file_name_21 = f'{base_name}_yaw_status_time_plot.png'
+            plot_file_path_21 = os.path.join(plots_folder, plot_file_name_21)
+            dict = {'vn': ['timestamp','yaw']}
+            dict_value_items = extract_values_from_data(mat_file_path, dict)
+            dict2 ={'status': ['timestamp','status_code']}
+            dict_value_items2 = extract_values_from_data(mat_file_path, dict2)
+            create_mixed_plot(plot_file_path_21,dict_value_items,dict_value_items2,title ='Yaw & Status Over Time',y_names='Yaw & Status')
+            plot_paths.append((plot_file_path_21, ''))
+
+        if selected_plots[mat_file_path]["Roll & Status/Time Plot"]:
+            plot_file_name_21 = f'{base_name}_roll_status_time_plot.png'
+            plot_file_path_21 = os.path.join(plots_folder, plot_file_name_21)
+            dict = {'vn': ['timestamp','roll']}
+            dict_value_items = extract_values_from_data(mat_file_path, dict)
+            dict2 ={'status': ['timestamp','status_code']}
+            dict_value_items2 = extract_values_from_data(mat_file_path, dict2)
+            create_mixed_plot(plot_file_path_21,dict_value_items,dict_value_items2,title ='Roll & Status Over Time',y_names='Roll & Status')
+            plot_paths.append((plot_file_path_21, ''))
+
+
+        if selected_plots[mat_file_path]["Depth & Pitch/Time Plot"]:
+            plot_file_name_21 = f'{base_name}_depth_pitch_time_plot.png'
+            plot_file_path_21 = os.path.join(plots_folder, plot_file_name_21)
+            dict = {'guidance_data_log': ['timestamp','pitch']}
+            dict_value_items = extract_values_from_data(mat_file_path, dict)
+            dict2 ={'ba30': ['timestamp','depth']}
+            dict_value_items2 = extract_values_from_data(mat_file_path, dict2)
+            create_mixed_plot(plot_file_path_21,dict_value_items,dict_value_items2,title ='Depth & Pitch Over Time',y_names='Depth & Pitch')
+            plot_paths.append((plot_file_path_21, ''))
+
 
 
 

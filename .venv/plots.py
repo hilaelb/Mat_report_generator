@@ -12,6 +12,7 @@ from pprint import pprint
 
 import matplotlib.pyplot as plt
 from matplotlib.ticker import FuncFormatter
+import itertools
 from docx import Document
 from docx.oxml.ns import qn
 from docx.oxml import OxmlElement
@@ -284,7 +285,7 @@ def create_histogram(table, output_plot_path,title=''):
     plt.close()
 
 
-def create_mixed_plot(output_plot_path, tables, title='',y_names ='',units_config_path="units_config.json",names_config_path="names_config.json"):
+def create_mixed_plot(output_plot_path, tables, tables2={}, title='',y_names ='',units_config_path="units_config.json",names_config_path="names_config.json"):
     if tables is None:
         print("Error: Missing table data.")
         return
@@ -292,9 +293,10 @@ def create_mixed_plot(output_plot_path, tables, title='',y_names ='',units_confi
     names_config = load_units_config(names_config_path)
     units_config = load_units_config(units_config_path)
 
-    x_data = None
+    x_data_list = []
     y_data_list = []
     y_labels = []
+
 
     for key, values in tables.items():
         if key == 'timestamp':
@@ -302,22 +304,46 @@ def create_mixed_plot(output_plot_path, tables, title='',y_names ='',units_confi
             x_data = np.array(values).flatten() / 1e6 / 60
             # Normalize the time to start from 0 minutes
             x_data = x_data - x_data[0]
+            x_data_list.append(x_data)
             x_label = names_config.get(key, "")
             x_unit = units_config.get(x_label, "")
         else:
             y_data_list.append(np.array(values).flatten())
             y_labels.append(names_config.get(key, ""))
 
-    if x_data is None or not y_data_list:
+
+    if tables2:
+        for key, values in tables2.items():
+            if key == 'timestamp':
+                # Convert time from microseconds to minutes
+                x_data = np.array(values).flatten() / 1e6 / 60
+                # Normalize the time to start from 0 minutes
+                x_data = x_data - x_data[0]
+                x_data_list.append(x_data)
+                x_label = names_config.get(key, "")
+                x_unit = units_config.get(x_label, "")
+            else:
+                y_data_list.append(np.array(values).flatten())
+                y_labels.append(names_config.get(key, ""))
+
+    if not x_data_list or not y_data_list:
         print("Error: Missing necessary data for plotting.")
         return
 
     # Create the plot
-    fig_width, fig_height = determine_figure_size(len(x_data), len(y_data_list[0]),(14,6))
+    fig_width, fig_height = determine_figure_size(len(x_data_list[0]), len(y_data_list[0]),(14,6))
     plt.figure(figsize=(fig_width, fig_height))
 
     for i, y_data in enumerate(y_data_list):
-        plt.scatter(x_data, y_data, label=f'{y_labels[i]} [{units_config.get(y_labels[i], "")}]')
+        if i < len(x_data_list):
+            x_data = x_data_list[i]
+        else:
+            x_data = x_data_list[0]  # Default to the first x_data if no matching x_data is found
+        if len(x_data) == len(y_data):
+            plt.scatter(x_data, y_data, label=f'{y_labels[i]} [{units_config.get(y_labels[i], "")}]')
+        else:
+            print(f"Warning: Skipping plot for {y_labels[i]} due to mismatched data lengths.")
+
 
     plt.xlabel(f'{x_label} [{x_unit}]', fontsize=20)
     plt.ylabel(y_names, fontsize=20)
@@ -381,7 +407,7 @@ def create_partitioned_plot(output_plot_path, tables,title='', units_config_path
         y_label = names_config.get(key, "")
         y_unit = units_config.get(y_label, "")
 
-        axes[i].scatter(axis_x, axis_y)
+        axes[i].scatter(axis_x, axis_y,s=10)
         axes[i].set_ylabel(f'{y_label} [{y_unit}]', fontsize=14)
         axes[i].grid(True)
 
@@ -400,67 +426,153 @@ def create_partitioned_plot(output_plot_path, tables,title='', units_config_path
 
 
 
-def create_3d_plot(output_plot_path,dict_value_items, units_config_path="units_config.json",names_config_path="names_config.json"):
-    if dict_value_items is None:
-        print("Error: Missing table data.")
+def create_3d_plot(output_plot_path,tables,tables2 ={} ,title = "",units_config_path="units_config.json",names_config_path="names_config.json"):
+    if tables is None or not tables:
+        print("Error: Missing tables data.")
         return
-    # Load units configuration
+
+        # Load units and names configurations
     names_config = load_units_config(names_config_path)
     units_config = load_units_config(units_config_path)
-    axis_x = axis_y1 = axis_y2 = None
-    x_unit = y1_unit = y2_unit = "unknown unit"
-    x_label = y1_label = y2_label = "unknown"
 
-    for key, values in dict_value_items.items():
+    # Extract x-axis data from tables
+    x_data = None
+    y1_data_list = []
+    y1_labels = []
+    for key, values in tables.items():
         if key == 'timestamp':
-            # Convert time from microseconds to minutes
-            axis_x = np.array(values).flatten() / 1e6 / 60
-            # Normalize the time to start from 0 minutes
-            axis_x = axis_x - axis_x[0]
-            x_label = 'time'
+            x_data = np.array(values).flatten() / 1e6 / 60  # Convert microseconds to minutes
+            x_data -= x_data[0]  # Normalize time to start at 0 minutes
+            x_label = names_config.get(key, "time")
             x_unit = units_config.get(x_label, "")
+        else:
+            y1_data_list.append(np.array(values).flatten())
+            y1_labels.append(names_config.get(key, key))
 
-        elif key == 'latitude':
-            axis_y1 = np.array(values).flatten()
-            y1_label = 'latitude'
-            y1_unit = units_config.get(y1_label, "")
 
-        elif key == 'longitude':
-            axis_y2 = np.array(values).flatten()
-            y2_label = 'longitude'
-            y2_unit = units_config.get(y2_label, "")
-
-        elif key == 'altitude':
-            axis_y2 = np.array(values).flatten()
-            y2_label = 'depth'
-            y2_unit = units_config.get(y2_label, "")
-
-    if axis_x is None or axis_y1 is None or axis_y2 is None:
-        print("Error: Missing necessary data for plotting.")
+    if x_data is None:
+        print("Error: Missing data.")
         return
 
-    fig_width, fig_height = determine_figure_size(len(axis_x), len(axis_y1))
+
+    # Extract y-axis data from tables2
+    y2_data_list = []
+    y2_labels = []
+
+    for key, values in tables2.items():
+        y2_data_list.append(np.array(values).flatten())
+        y2_labels.append(names_config.get(key, ""))
+
+    if not y1_data_list and not y2_data_list:
+        print("Error: Missing y-axis data.")
+        return
+
+    # Create the plot
+    fig_width, fig_height = determine_figure_size(len(x_data), len(y1_data_list[0]))
     fig, ax1 = plt.subplots(figsize=(fig_width, fig_height))
 
-    color = 'tab:red'
-    ax1.plot(axis_x, axis_y1, color=color)
-    ax1.set_xlabel(f'{x_label} [{x_unit}]')
-    ax1.set_ylabel(f'{y1_label} [{y1_unit}]', color=color)
-    ax1.tick_params(axis='y', labelcolor=color)
+    # Define a color cycle that will apply to all plots, ensuring uniqueness across both axes
+    color_cycle = itertools.cycle(plt.cm.tab10.colors)  # Use a colormap like 'tab10' for variety
+
+    lines = []
+    labels = []
+
+    # Plot data from tables (left y-axis)
+
+    for i, y_data in enumerate(y1_data_list):
+        color = next(color_cycle)
+        line = ax1.scatter(x_data, y_data, color=color)
+        lines.append(line)
+        labels.append(f'{y1_labels[i]} [{units_config.get(y1_labels[i], "")}]')
+    ax1.set_xlabel(f'{x_label} [{x_unit}]',fontsize=20)
+    ax1.set_ylabel(' & '.join([f'{label} [{units_config.get(label, "")}]' for label in y1_labels]),fontsize=20)
+    ax1.tick_params(axis='y',labelsize=20)
     ax1.yaxis.set_major_formatter(FuncFormatter(format_decimal))  # Format y-axis labels
 
-    ax2 = ax1.twinx()  # instantiate a second axes that shares the same x-axis
-    color = 'tab:blue'
-    ax2.plot(axis_x, axis_y2, color=color)
-    ax2.set_ylabel(f'{y2_label} [{y2_unit}]', color=color)
-    ax2.tick_params(axis='y', labelcolor=color)
+    # Plot data from tables2 (right y-axis)
+    ax2 = ax1.twinx()  # Instantiate a second axes that shares the same x-axis
+
+    for i, y_data in enumerate(y2_data_list):
+        color = next(color_cycle)
+        line= ax2.scatter(x_data, y_data, color=color)
+        lines.append(line)
+        labels.append(f'{y2_labels[i]} [{units_config.get(y2_labels[i], "")}]')
+
+    ax2.set_ylabel(' & '.join([f'{label} [{units_config.get(label, "")}]' for label in y2_labels]),fontsize=20)
+    ax2.tick_params(axis='both',labelsize=20)
     ax2.xaxis.set_major_formatter(FuncFormatter(format_decimal))  # Format x-axis labels
     ax2.yaxis.set_major_formatter(FuncFormatter(format_decimal))  # Format y-axis labels
 
-    plt.plot(label=f'{y1_label} and {y2_label} over {x_label}')
-    plt.title(f'{y1_label} and {y2_label} over {x_label}')
+
+    # Adjust the layout and save the plot
+    fig.tight_layout(rect=[0.05, 0.05, 0.95, 0.95])
+    plt.title(title, fontsize=20)
+    plt.legend(lines,labels,fontsize=18)
     plt.savefig(output_plot_path)
     plt.close()
+
+
+
+    # if tables is None:
+    #     print("Error: Missing table data.")
+    #     return
+    # # Load units configuration
+    # names_config = load_units_config(names_config_path)
+    # units_config = load_units_config(units_config_path)
+    # axis_x = axis_y1 = axis_y2 = None
+    # x_unit = y1_unit = y2_unit = "unknown unit"
+    # x_label = y1_label = y2_label = "unknown"
+    #
+    # for key, values in tables.items():
+    #     if key == 'timestamp':
+    #         # Convert time from microseconds to minutes
+    #         axis_x = np.array(values).flatten() / 1e6 / 60
+    #         # Normalize the time to start from 0 minutes
+    #         axis_x = axis_x - axis_x[0]
+    #         x_label = 'time'
+    #         x_unit = units_config.get(x_label, "")
+    #
+    #     elif key == 'latitude':
+    #         axis_y1 = np.array(values).flatten()
+    #         y1_label = 'latitude'
+    #         y1_unit = units_config.get(y1_label, "")
+    #
+    #     elif key == 'longitude':
+    #         axis_y2 = np.array(values).flatten()
+    #         y2_label = 'longitude'
+    #         y2_unit = units_config.get(y2_label, "")
+    #
+    #     elif key == 'altitude':
+    #         axis_y2 = np.array(values).flatten()
+    #         y2_label = 'depth'
+    #         y2_unit = units_config.get(y2_label, "")
+    #
+    # if axis_x is None or axis_y1 is None or axis_y2 is None:
+    #     print("Error: Missing necessary data for plotting.")
+    #     return
+    #
+    # fig_width, fig_height = determine_figure_size(len(axis_x), len(axis_y1))
+    # fig, ax1 = plt.subplots(figsize=(fig_width, fig_height))
+    #
+    # color = 'tab:red'
+    # ax1.plot(axis_x, axis_y1, color=color)
+    # ax1.set_xlabel(f'{x_label} [{x_unit}]')
+    # ax1.set_ylabel(f'{y1_label} [{y1_unit}]', color=color)
+    # ax1.tick_params(axis='y', labelcolor=color)
+    # ax1.yaxis.set_major_formatter(FuncFormatter(format_decimal))  # Format y-axis labels
+    #
+    # ax2 = ax1.twinx()  # instantiate a second axes that shares the same x-axis
+    # color = 'tab:blue'
+    # ax2.plot(axis_x, axis_y2, color=color)
+    # ax2.set_ylabel(f'{y2_label} [{y2_unit}]', color=color)
+    # ax2.tick_params(axis='y', labelcolor=color)
+    # ax2.xaxis.set_major_formatter(FuncFormatter(format_decimal))  # Format x-axis labels
+    # ax2.yaxis.set_major_formatter(FuncFormatter(format_decimal))  # Format y-axis labels
+    #
+    # plt.plot(label=f'{y1_label} and {y2_label} over {x_label}')
+    # plt.title(f'{y1_label} and {y2_label} over {x_label}')
+    # plt.savefig(output_plot_path)
+    # plt.close()
 
 def plot_tiger_modes(tables, output_plot_path, units_config_path="units_config.json",names_config_path="names_config.json"):
     # Define state labels and values
@@ -468,7 +580,7 @@ def plot_tiger_modes(tables, output_plot_path, units_config_path="units_config.j
     if tables is None:
         print("Error: Missing tables data.")
         return
-    pprint(tables)
+
     if list(tables.keys())[0] == 'tiger_mode':
         state_labels = {
             1: 'IDLE',
@@ -579,10 +691,10 @@ def create_plot(output_plot_path, tables,title='', units_config_path="units_conf
     fig.suptitle(title, fontsize=22)
 
     if plot:
-        plt.plot(axis_x, axis_y)
+        plt.plot(axis_x, axis_y, label=f'{y_label}')
 
     else:
-        plt.scatter(axis_x, axis_y)
+        plt.scatter(axis_x, axis_y, label=f'{y_label}')
 
 
     # Calculate mean and standard deviation if mean_sd is True
@@ -591,6 +703,7 @@ def create_plot(output_plot_path, tables,title='', units_config_path="units_conf
         std_dev = np.std(axis_y)
         plt.axhline(y=mean, color='r', linestyle='--', label=f'Mean: {mean:.2f}')
         plt.fill_between(axis_x, mean - std_dev, mean + std_dev, color='r', alpha=0.2, label=f'SD: {std_dev:.2f}')
+        # plt.legend()
 
     if range!= (0,0):
         plt.ylim(range)
@@ -603,7 +716,7 @@ def create_plot(output_plot_path, tables,title='', units_config_path="units_conf
     plt.gca().xaxis.set_major_formatter(plt.FuncFormatter(format_decimal))
     plt.gca().yaxis.set_major_formatter(plt.FuncFormatter(format_decimal))
 
-    plt.legend(fontsize=14)
+    plt.legend(fontsize=20)
     fig.tight_layout(rect=[0.05, 0.05, 1, 0.95])
     plt.savefig(output_plot_path)
     plt.close()

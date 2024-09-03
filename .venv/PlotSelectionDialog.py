@@ -93,24 +93,35 @@ class PlotSelectionDialog(QDialog):
             "ADC Histogram",
             "Pid pitch Histogram",
             "Pid heading Histogram",
-            "Jet Histogram"
+            "Jet Histogram",
+            "Position & Velocity Uncertainty/Time Plot",
+            "Fix & Num Sats/Time Plot",
+            "Yaw & Status/Time Plot",
+            "Roll & Status/Time Plot",
+            "Depth & Pitch/Time Plot"
+
+
+
 
             # Add more plot options here
         ]
 
         checkboxes = {}
+        select_all_checkbox = QCheckBox("Select All")
+        select_all_checkbox.setFont(font)
+        checkbox_layout.addWidget(select_all_checkbox)
+
         for option in plot_options:
             checkbox = QCheckBox(option)
             checkbox.setFont(font)
             checkbox_layout.addWidget(checkbox)
             checkboxes[option] = checkbox
 
-        select_all_checkbox = QCheckBox("Select All")
-        select_all_checkbox.setFont(font)
+
         select_all_checkbox.stateChanged.connect(
             lambda state, checkboxes=checkboxes: self.toggle_select_all(state, checkboxes)
         )
-        checkbox_layout.addWidget(select_all_checkbox)
+
 
         return checkbox_container, checkboxes
 
