@@ -284,10 +284,12 @@ def create_histogram(table, output_plot_path,title=''):
     plt.close()
 
 
-def create_mixed_plot(output_plot_path, tables, title='',y_names ='',units_config_path="units_config.json" ):
+def create_mixed_plot(output_plot_path, tables, title='',y_names ='',units_config_path="units_config.json",names_config_path="names_config.json"):
     if tables is None:
         print("Error: Missing table data.")
         return
+
+    names_config = load_units_config(names_config_path)
     units_config = load_units_config(units_config_path)
 
     x_data = None
@@ -300,11 +302,11 @@ def create_mixed_plot(output_plot_path, tables, title='',y_names ='',units_confi
             x_data = np.array(values).flatten() / 1e6 / 60
             # Normalize the time to start from 0 minutes
             x_data = x_data - x_data[0]
-            x_label = 'Time'
-            x_unit = units_config.get(x_label.lower(), "")
+            x_label = names_config.get(key, "")
+            x_unit = units_config.get(x_label, "")
         else:
             y_data_list.append(np.array(values).flatten())
-            y_labels.append(key)
+            y_labels.append(names_config.get(key, ""))
 
     if x_data is None or not y_data_list:
         print("Error: Missing necessary data for plotting.")
@@ -329,12 +331,14 @@ def create_mixed_plot(output_plot_path, tables, title='',y_names ='',units_confi
     plt.savefig(output_plot_path)
     plt.close()
 
-def create_partitioned_plot(output_plot_path, tables,title='', units_config_path="units_config.json"):
+def create_partitioned_plot(output_plot_path, tables,title='', units_config_path="units_config.json",names_config_path="names_config.json"):
 
-    units_config = load_units_config(units_config_path)
+
     if tables is None:
         print("Error: Missing tables data.")
         return
+    names_config = load_units_config(names_config_path)
+    units_config = load_units_config(units_config_path)
 
 
     keys = list(tables.keys())
@@ -343,11 +347,12 @@ def create_partitioned_plot(output_plot_path, tables,title='', units_config_path
     if x_key == 'timestamp':
         axis_x = np.array(tables[x_key]).flatten() / 1e6 / 60
         axis_x = axis_x - axis_x[0]
-        x_label = 'time'
+
 
     else:
         axis_x = np.array(tables[x_key]).flatten()
-        x_label = x_key
+
+    x_label = names_config.get(x_key, "")
 
     x_unit = units_config.get(x_label, "")
 
@@ -373,14 +378,15 @@ def create_partitioned_plot(output_plot_path, tables,title='', units_config_path
 
     for i, key in enumerate(keys[1:]):
         axis_y = np.array(tables[key]).flatten()
-        y_label = key
+        y_label = names_config.get(key, "")
         y_unit = units_config.get(y_label, "")
 
         axes[i].scatter(axis_x, axis_y)
         axes[i].set_ylabel(f'{y_label} [{y_unit}]', fontsize=14)
-
         axes[i].grid(True)
-        axes[i].legend(loc='upper right', fontsize=12)
+
+
+
 
 
 
@@ -394,11 +400,12 @@ def create_partitioned_plot(output_plot_path, tables,title='', units_config_path
 
 
 
-def create_3d_plot(output_plot_path,dict_value_items, units_config_path="units_config.json"):
+def create_3d_plot(output_plot_path,dict_value_items, units_config_path="units_config.json",names_config_path="names_config.json"):
     if dict_value_items is None:
         print("Error: Missing table data.")
         return
     # Load units configuration
+    names_config = load_units_config(names_config_path)
     units_config = load_units_config(units_config_path)
     axis_x = axis_y1 = axis_y2 = None
     x_unit = y1_unit = y2_unit = "unknown unit"
@@ -455,7 +462,7 @@ def create_3d_plot(output_plot_path,dict_value_items, units_config_path="units_c
     plt.savefig(output_plot_path)
     plt.close()
 
-def plot_tiger_modes(tables, output_plot_path, units_config_path="units_config.json"):
+def plot_tiger_modes(tables, output_plot_path, units_config_path="units_config.json",names_config_path="names_config.json"):
     # Define state labels and values
     state_labels = {}
     if tables is None:
@@ -481,6 +488,8 @@ def plot_tiger_modes(tables, output_plot_path, units_config_path="units_config.j
             64: 'STOP',
             128: 'PAUSE'
         }
+
+    names_config = load_units_config(names_config_path)
     units_config = load_units_config(units_config_path)
     time_data = state_data = None
 
@@ -490,15 +499,13 @@ def plot_tiger_modes(tables, output_plot_path, units_config_path="units_config.j
             time_data = np.array(values).flatten() / 1e6 / 60
             # Normalize the time to start from 0 minutes
             time_data = time_data - time_data[0]
-            x_label = 'time'
-            x_unit = units_config.get(x_label, "unknown unit")
+            x_label = names_config.get(key, "")
+            x_unit = units_config.get(x_label, "")
 
-        elif key == 'tiger_mode':
-            y_label = 'Tiger State'
-            state_data = np.array(values).flatten()
         else:
-            y_label = 'QGC State'
+            y_label = names_config.get(key, "")
             state_data = np.array(values).flatten()
+
 
 
     # Create a list of state labels based on the state data
@@ -532,11 +539,12 @@ def plot_tiger_modes(tables, output_plot_path, units_config_path="units_config.j
 
 
 
-def create_plot(output_plot_path, tables,title='', units_config_path="units_config.json",plot=False,mean_sd = False,range= (0,0)):
+def create_plot(output_plot_path, tables,title='', units_config_path="units_config.json",names_config_path = "names_config.json",plot=False,mean_sd = False,range= (0,0)):
 
     if tables is None:
         return
     # Load units configuration
+    names_config = load_units_config(names_config_path)
     units_config = load_units_config(units_config_path)
     keys = list(tables.keys())
 
@@ -552,16 +560,13 @@ def create_plot(output_plot_path, tables,title='', units_config_path="units_conf
         axis_x = np.array(tables[x_key]).flatten() / 1e6 / 60
         # Normalize the time to start from 0 minutes
         axis_x = axis_x - axis_x[0]
-        x_label = 'time'
+
     else:
         axis_x = np.array(tables[x_key]).flatten()
-        x_label = x_key
 
-    if y_key == 'v_in':
-        y_label = 'voltage'
+    x_label = names_config.get(x_key, "")
 
-    else:
-        y_label = y_key
+    y_label = names_config.get(y_key, "")
     axis_y = np.array(tables[y_key]).flatten()
 
     # Get the units from the configuration
