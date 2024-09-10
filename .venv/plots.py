@@ -181,7 +181,7 @@ def kml_to_gmplot_image(mat_file_path, table, lat_key, lon_key, output_image_pat
 
     # Use Selenium to open the HTML file and take a screenshot
     options = webdriver.ChromeOptions()
-    #options.add_argument('--headless')
+    options.add_argument('--headless')
     options.add_argument('--disable-gpu')
     options.add_argument('--no-sandbox')
     driver = webdriver.Chrome(options=options)
