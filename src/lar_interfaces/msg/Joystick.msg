@@ -1,0 +1,9 @@
+int64  timestamp
+int32 chan1
+int32 chan2
+int32 chan3
+int32 chan4
+int32 chan5
+int32 chan6
+int32 chan7
+int32 chan8

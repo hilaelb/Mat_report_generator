@@ -1,0 +1,3 @@
+bool send_data
+---
+AdcData adc_data

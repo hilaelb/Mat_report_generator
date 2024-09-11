@@ -1,0 +1,13 @@
+int64   timestamp
+float64 v_24
+float64 v_12
+float64 v_5
+float64 v_3
+float64 i_24
+float64 i_12
+float64 i_5
+float64 i_3
+float64 i_in
+float64 v_in
+float64 ain_10
+float64 ain_11

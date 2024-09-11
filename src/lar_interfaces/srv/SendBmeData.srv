@@ -1,0 +1,3 @@
+bool send_data
+---
+BmeData bme_data
